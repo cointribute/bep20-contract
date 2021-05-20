@@ -336,20 +336,23 @@ contract BEP20Token is Context, IBEP20, Ownable {
   mapping (address => uint256) private _balances;
   mapping (address => mapping (address => uint256)) private _allowances;
 
-  string constant private _name = "Cointribute";
-  string constant private _symbol = "CTB";
-  uint8 constant private _decimals = 18;
-  uint256 constant private _totalSupply = 50000000 * (uint256(10) ** _decimals);
+  string constant public name = "Cointribute";
+  string constant public symbol = "CTB";
+  uint8 constant public decimals = 18;
+  uint256 constant public totalSupply = 50000000 * (uint256(10) ** decimals);
 
-  address private _donationWallet;
-  address private _teamWallet;
+  address public donationWallet;
+  address public teamWallet;
 
-  constructor(address donationWallet, address teamWallet) public {
-    _donationWallet = donationWallet;
-    _teamWallet = teamWallet;
+  constructor(address donation, address team) public {
+    require(donation != address(0), "CTB: donation wallet cannot be the zero address");
+    require(team != address(0), "CTB: team wallet cannot be the zero address");
+    
+    donationWallet = donation;
+    teamWallet = team;
 
-    _balances[msg.sender] = _totalSupply;
-    emit Transfer(address(0), msg.sender, _totalSupply);
+    _balances[msg.sender] = totalSupply;
+    emit Transfer(address(0), msg.sender, totalSupply);
   }
 
   /**
@@ -360,52 +363,10 @@ contract BEP20Token is Context, IBEP20, Ownable {
   }
 
   /**
-   * @dev Returns the token decimals.
-   */
-  function decimals() external view returns (uint8) {
-    return _decimals;
-  }
-
-  /**
-   * @dev Returns the token symbol.
-   */
-  function symbol() external view returns (string memory) {
-    return _symbol;
-  }
-
-  /**
-  * @dev Returns the token name.
-  */
-  function name() external view returns (string memory) {
-    return _name;
-  }
-
-  /**
-   * @dev See {BEP20-totalSupply}.
-   */
-  function totalSupply() external view returns (uint256) {
-    return _totalSupply;
-  }
-
-  /**
    * @dev See {BEP20-balanceOf}.
    */
   function balanceOf(address account) external view returns (uint256) {
     return _balances[account];
-  }
-
-  /**
-   * @dev Returns the address of the team wallet.
-   */
-  function teamWallet() external view returns (address) {
-    return _teamWallet;
-  }
-
-  /**
-   * @dev Returns the address of the donation wallet.
-   */
-  function donationWallet() external view returns (address) {
-    return _donationWallet;
   }
 
   /**
@@ -514,17 +475,17 @@ contract BEP20Token is Context, IBEP20, Ownable {
 
     _balances[sender] = _balances[sender].sub(amount, "BEP20: transfer amount exceeds balance");
 
-    if (sender != _donationWallet) {
+    if (sender != donationWallet) {
       uint256 teamFees = amount.div(100);
       uint256 donationFees = amount.mul(2).div(100);
       uint256 recipientAmount = amount.sub(donationFees).sub(teamFees);
 
-      _balances[_teamWallet] = _balances[_teamWallet].add(teamFees);
-      _balances[_donationWallet] = _balances[_donationWallet].add(donationFees);
+      _balances[teamWallet] = _balances[teamWallet].add(teamFees);
+      _balances[donationWallet] = _balances[donationWallet].add(donationFees);
       _balances[recipient] = _balances[recipient].add(recipientAmount);
 
-      emit Transfer(sender, _teamWallet, teamFees);
-      emit Transfer(sender, _donationWallet, donationFees);
+      emit Transfer(sender, teamWallet, teamFees);
+      emit Transfer(sender, donationWallet, donationFees);
       emit Transfer(sender, recipient, recipientAmount);
     } else {
       _balances[recipient] = _balances[recipient].add(amount);
@@ -558,8 +519,8 @@ contract BEP20Token is Context, IBEP20, Ownable {
    */
   function setDonationWallet(address wallet) external onlyOwner {
     require(wallet != address(0), "CTB: new donation wallet cannot be the zero address");
-    emit DonationWalletTransferred(_donationWallet, wallet);
-    _donationWallet = wallet;
+    emit DonationWalletTransferred(donationWallet, wallet);
+    donationWallet = wallet;
   }
 
   /**
@@ -567,7 +528,7 @@ contract BEP20Token is Context, IBEP20, Ownable {
    */
   function setTeamWallet(address wallet) external onlyOwner {
     require(wallet != address(0), "CTB: new team wallet cannot be the zero address");
-    emit TeamWalletTransferred(_teamWallet, wallet);
-    _teamWallet = wallet;
+    emit TeamWalletTransferred(teamWallet, wallet);
+    teamWallet = wallet;
   }
 }
